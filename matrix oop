@@ -1,0 +1,259 @@
+using System;
+
+class Program
+{
+    static void Main()
+    {
+        // Пример использования:
+        SquareMatrix s_m = new SquareMatrix(3);  // Размер 3x3
+        s_m.completion_random();
+        Console.WriteLine("Матрица:");
+        s_m.print();
+
+        //Console.WriteLine("Определитель: " + s_m.determinant());
+        //Console.WriteLine();
+
+        //Console.WriteLine("Определитель: " + s_m.pupupu());
+
+        //Console.WriteLine("Матрица умноженная на число:");
+        //s_m.multiplication_number(2);
+        //s_m.print();
+
+        //Console.WriteLine("Матрица деленная на число:");
+        //s_m.division_number(2);
+        //s_m.print();
+
+        //Console.WriteLine("След: " + s_m.trace());
+        //Console.WriteLine();
+
+        //Console.WriteLine("Транспонированная матрица:");
+        //s_m.transpose().print();
+
+        //Console.WriteLine("Верхнетреугольная матрица:");
+        //s_m.UpperTriangular().print();
+
+        //Console.WriteLine("Обратная матрица:");
+        //s_m.Inverse().print();
+    }
+}
+
+class Matrix
+{
+    public double[,] mas;
+    public int Rows { get; private set; }
+    public int Cols { get; private set; }
+
+    public Matrix(int rows, int cols)
+    {
+        Rows = rows;
+        Cols = cols;
+        mas = new double[rows, cols];
+    }
+
+    public double this[int rows, int cols]
+    {
+        get => mas[rows, cols];
+        set => mas[rows, cols] = value;
+    }
+
+    public void completion_random()
+    {
+        Random random = new Random();
+        for (int i = 0; i < Rows; i++)
+            for (int j = 0; j < Cols; j++)
+                mas[i, j] = random.Next(0, 10);
+    }
+
+    public void multiplication_number(double num)
+    {
+        for (int i = 0; i < Rows; i++)
+            for (int j = 0; j < Cols; j++)
+                mas[i, j] *= num;
+    }
+    public void division_number(double num)
+    {
+        for (int i = 0; i < Rows; i++)
+            for (int j = 0; j < Cols; j++)
+                mas[i, j] /= num;
+    }
+
+    public void print()
+    {
+        for (int i = 0; i < Rows; i++)
+        {
+            for (int j = 0; j < Cols; j++)
+                //Console.Write(mas[i, j] + "\t");
+                Console.Write($"{mas[i, j]:F2}\t");
+            Console.WriteLine();
+        }
+        Console.WriteLine();
+    }
+}
+
+class SquareMatrix : Matrix
+{
+    public SquareMatrix(int size) : base(size, size){}
+
+    // Определитель
+    public double determinant()
+    {
+        if (Rows == 1) return mas[0, 0];
+
+        if (Rows == 2) return mas[0, 0] * mas[1, 1] - mas[0, 1] * mas[1, 0];
+
+        double det = 0;
+        for (int i = 0; i < Rows; i++)
+        {
+            double sign;
+            if (i % 2 == 0) sign = 1;
+            else sign = -1;
+
+            det += sign * mas[0, i] * minor(0, i);
+        }
+        return det;
+    }
+
+    // Минор матрицы
+    private double minor(int row, int col)
+    {
+        int size = Rows - 1;
+        double[,] minorMatrix = new double[size, size];
+        int minorRow = 0;
+
+        for (int i = 0; i < Rows; i++)
+        {
+            if (i == row) continue;
+            int minorCol = 0;
+
+            for (int j = 0; j < Cols; j++)
+            {
+                if (j == col) continue;
+                minorMatrix[minorRow, minorCol] = mas[i, j];
+                minorCol++;
+            }
+
+            minorRow++;
+        }
+
+        SquareMatrix minor = new SquareMatrix(size);
+        minor.mas = minorMatrix;
+        return minor.determinant();
+    }
+
+    // След матрицы
+    public double trace()
+    {
+        double t = 0;
+        for (int i = 0; i < Rows; i++)
+            t += mas[i, i];
+        return t;
+    }
+
+    // Транспонирование
+    public SquareMatrix transpose()
+    {
+        var tr = new SquareMatrix(Rows);
+        for (int i = 0; i < Rows; i++)
+            for (int j = 0; j < Cols; j++)
+                tr[i, j] = mas[j, i];
+        return tr;
+    }
+
+    // Обратная матрица
+    public SquareMatrix Inverse()
+    {
+        if (determinant() == 0)
+            throw new InvalidOperationException("Матрица вырожденная и не имеет обратной.");
+            var augmented = new double[Rows, 2 * Cols];
+
+        // Создание расширенной матрицы
+        for (int i = 0; i < Rows; i++)
+        {
+            for (int j = 0; j < Cols; j++)
+            {
+                augmented[i, j] = mas[i, j];
+                augmented[i, j + Cols] = (i == j) ? 1 : 0; // Добавление единичной матрицы
+            }
+        }
+
+        // Прямой ход метода Гаусса
+        for (int k = 0; k < Rows; k++)
+        {
+            double pivot = augmented[k, k];
+            if (pivot == 0)
+                throw new InvalidOperationException("Матрица вырожденная и не имеет обратной.");
+
+            // Нормализация строки
+            for (int j = 0; j < 2 * Cols; j++)
+                augmented[k, j] /= pivot;
+
+            // Зануление элементов в колонке ниже и выше главной диагонали
+            for (int i = 0; i < Rows; i++)
+            {
+                if (i == k) continue;
+                double factor = augmented[i, k];
+                for (int j = 0; j < 2 * Cols; j++)
+                    augmented[i, j] -= factor * augmented[k, j];
+            }
+        }
+
+        // Извлечение обратной матрицы
+        var result = new SquareMatrix(Rows);
+        for (int i = 0; i < Rows; i++)
+            for (int j = 0; j < Cols; j++)
+                result[i, j] = augmented[i, j + Cols];
+
+        return result;
+    }
+
+    // Преобразование в верхнетреугольную форму
+    public SquareMatrix UpperTriangular()
+    {
+        var result = new SquareMatrix(Rows);
+        for (int i = 0; i < Rows; i++)
+            for (int j = 0; j < Cols; j++)
+                result[i, j] = mas[i, j];
+
+        for (int k = 0; k < Rows; k++)
+        {
+            // Проверка на нулевой элемент на диагонали, замена строк если нужно
+            if (result[k, k] == 0)
+            {
+                for (int i = k + 1; i < Rows; i++)
+                {
+                    if (result[i, k] != 0)
+                    {
+                        SwapRows(result, k, i);
+                        break;
+                    }
+                }
+            }
+
+            // Приведение элементов ниже главной диагонали к нулю
+            for (int i = k + 1; i < Rows; i++)
+            {
+                if (result[i, k] != 0)
+                {
+                    double factor = result[i, k] / result[k, k];
+                    for (int j = k; j < Cols; j++)
+                    {
+                        result[i, j] -= factor * result[k, j];
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    // Метод для обмена строк
+    private void SwapRows(SquareMatrix matrix, int row1, int row2)
+    {
+        for (int j = 0; j < matrix.Cols; j++)
+        {
+            double temp = matrix[row1, j];
+            matrix[row1, j] = matrix[row2, j];
+            matrix[row2, j] = temp;
+        }
+    }
+}
